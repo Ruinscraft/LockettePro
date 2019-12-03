@@ -10,13 +10,17 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.entity.Player;
 
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.object.WorldCoord;
+
 public class LocketteProAPI {
 
     public static BlockFace[] newsfaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     public static BlockFace[] allfaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
     
     public static boolean isLocked(Block block){
-        if (block == null) return false;
+    	if (!isWithinTown(block)) return false;
+
         switch (block.getType()){
         // Double Doors
         case OAK_DOOR:
@@ -148,7 +152,13 @@ public class LocketteProAPI {
         return false;
     }
     
-    public static boolean isProtected(Block block){
+    public static boolean isProtected(Block block) {
+    	try {
+    		System.out.println("testing testing");
+			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+		} catch (NotRegisteredException e) {
+			return false;
+		}
         return (isLockSign(block) || isLocked(block) || isUpDownLockedDoor(block));
     }
     
@@ -205,6 +215,7 @@ public class LocketteProAPI {
     }
     
     public static boolean isLockable(Block block){
+    	if (!isWithinTown(block)) return false;
         Material material = block.getType();
         //Bad blocks
         switch (material){
@@ -355,9 +366,18 @@ public class LocketteProAPI {
     public static boolean isSign(Block block){
         return block.getType() == Material.WALL_SIGN;
     }
+
+    public static boolean isWithinTown(Block block) {
+    	try {
+			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+		} catch (NotRegisteredException e) {
+			return false;
+		}
+    	return true;
+    }
     
     public static boolean isLockSign(Block block){
-        return isSign(block) && isLockString(((Sign)block.getState()).getLine(0));
+        return isWithinTown(block) && isSign(block) && isLockString(((Sign)block.getState()).getLine(0));
     }
     
     public static boolean isAdditionalSign(Block block){
@@ -402,7 +422,6 @@ public class LocketteProAPI {
             if (Dependency.isTownyTownOrNationOf(lines[i], player)) return true;
             if (Dependency.isPermissionGroupOf(lines[i], player)) return true;	
             if (Dependency.isScoreboardTeamOf(lines[i], player)) return true;
-            if (Dependency.isSimpleClanOf(lines[i], player)) return true;
         }
         
         return false;

@@ -5,53 +5,20 @@ targetCompatibility = 1.8
 
 repositories {
     jcenter()
-
-    maven {
-        name 'Spigot'
-        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-    }
-
-    maven {
-        name 'Sonatype'
-        url 'https://oss.sonatype.org/content/groups/public'
-    }
-    
-    maven {
-        name 'sk89q'
-        url 'http://maven.sk89q.com/artifactory/repo/'
-    }
-
-    maven {
-        name 'vault-repo'
-        url 'http://nexus.hc.to/content/repositories/pub_releases'
-    }
-
-    maven {
-        name 'dmulloy2'
-        url 'http://repo.dmulloy2.net/content/groups/public/'
-    }
+    maven {name 'Spigot';     url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'}
+    maven {name 'Sonatype';   url 'https://oss.sonatype.org/content/groups/public'}
+    maven {name 'sk89q';      url 'http://maven.sk89q.com/artifactory/repo/'}
+    maven {name 'playpro';    url 'https://maven.playpro.com/'}
+    maven {name 'vault-repo'; url 'https://jitpack.io'}
+    maven {name 'dmulloy2';   url 'http://repo.dmulloy2.net/nexus/repository/public/'}
 }
 
 dependencies {
-    compile 'org.bukkit:bukkit:1.13.2-R0.1-SNAPSHOT'
-    compile('net.milkbowl.vault:VaultAPI:1.7') {
-        transitive = false
-    }
-    compile('com.sk89q.worldguard:worldguard-legacy:7.0.0-SNAPSHOT') {
-        transitive = false
-    }
-    compile('com.comphenix.protocol:ProtocolLib-API:4.4.0-SNAPSHOT') {
-        //transitive = false
-    }
-    compile files('lib/Residence4.8.3.0.jar')
-    compile files('lib/askyblock.jar')
-    compile files('lib/PlotSquared-Bukkit-18.11.05-ae2869a-2051.jar')
-    compile files('lib/SimpleClans.jar')
-    compile files('lib/Factions.jar')
-    compile files('lib/MassiveCore.jar')
-    compile files('lib/Towny.jar')
-    compile files('lib/GriefPrevention.jar')
-    compile files('lib/CoreProtect-2.15.0.jar')
+    compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
+    compileOnly('net.milkbowl.vault:VaultAPI:1.7') { transitive = false }
+    compileOnly('com.sk89q.worldguard:worldguard-bukkit:7.0.1-SNAPSHOT') { transitive = false }
+    compileOnly('com.comphenix.protocol:ProtocolLib-API:4.4.0') { transitive = false }
+    compile files('libs/Towny.jar')
 }
 compileJava {
     options.compilerArgs += ["-Xlint:deprecation"]
