@@ -12,7 +12,6 @@ import org.bukkit.entity.Player;
 
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 
 public class LocketteProAPI {
@@ -163,7 +162,6 @@ public class LocketteProAPI {
     
     public static boolean isProtected(Block block) {
     	try {
-    		System.out.println("testing testing");
 			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
 		} catch (NotRegisteredException e) {
 			return false;

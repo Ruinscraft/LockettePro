@@ -319,7 +319,7 @@ public class BlockPlayerListener implements Listener {
         Block block = event.getBlock();
         Player player = event.getPlayer();
         if (!player.hasPermission("lockettepro.lock")) return;
-        if (Utils.shouldNotify(player) && Config.isLockable(block.getType())){
+        if (Utils.shouldNotify(player) && Config.isLockable(block.getType()) && LocketteProAPI.isLockable(block)){
             switch (Config.getQuickProtectAction()){
             case (byte)0:
                 Utils.sendMessages(player, Config.getLang("you-can-manual-lock-it"));	
