@@ -12,7 +12,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 public class BlockInventoryMoveListener implements Listener {
-    
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onInventoryMove(InventoryMoveItemEvent event){
         if (Config.isItemTransferOutBlocked() || Config.getHopperMinecartAction() != (byte)0){

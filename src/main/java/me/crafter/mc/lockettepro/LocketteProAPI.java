@@ -19,8 +19,9 @@ public class LocketteProAPI {
     public static BlockFace[] newsfaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     public static BlockFace[] allfaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
     
-    public static boolean isLocked(Block block){
+    public static boolean isLocked(Block block) {
     	if (!isWithinTown(block)) return false;
+    	if (block == null) return false;
         switch (block.getType()){
         // Double Doors
         case OAK_DOOR:
@@ -58,7 +59,7 @@ public class LocketteProAPI {
             // Don't break here
         // Everything else (First block of container check goes here)
         default:
-            if (isLockedSingleBlock(block, null)) return true; 
+            if (isLockedSingleBlock(block, null)) return true;
             break;
         }
         return false;
@@ -485,7 +486,7 @@ public class LocketteProAPI {
     }
 
     public static Block getAttachedBlock(Block sign){ // Requires isSign
-        return sign.getRelative(((org.bukkit.block.data.type.WallSign) sign.getBlockData()).getFacing().getOppositeFace());
+        return sign.getRelative(((org.bukkit.material.Sign) sign.getState().getData()).getFacing().getOppositeFace());
     }
     
     public static int getTimerOnSigns(Block block){
