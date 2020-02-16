@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
+import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 
 public class LocketteProAPI {
@@ -68,10 +69,9 @@ public class LocketteProAPI {
     public static boolean isOwner(Block block, Player player){
     	if (isWithinTown(block)) {
     		try {
-    			Resident mayor = WorldCoord.parseWorldCoord(block).getTownBlock().getTown().getMayor();
-    			if (mayor.getName().equals(player.getName())) {
-    				return true;
-    			}
+    			Town town = WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+    			Resident mayor = town.getMayor();
+    			if (mayor.getName().equals(player.getName())) return true;
     		} catch (Exception e) { }
     	}
         switch (block.getType()){
