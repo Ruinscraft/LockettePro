@@ -19,3 +19,5 @@ lib/
 /.gradle/
 /bin/
 /build/
+gradlew
+gradlew.bat

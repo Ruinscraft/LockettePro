@@ -21,6 +21,7 @@ public class Config {
     private static String langfilename = "lang.yml";
     private static boolean uuid = false;
     private static Set<Material> lockables = new HashSet<Material>();
+    private static Set<Material> superLockables = new HashSet<Material>();
     private static Set<String> privatestrings = new HashSet<String>();
     private static Set<String> additionalstrings = new HashSet<String>();
     private static Set<String> everyonestrings = new HashSet<String>();
@@ -145,6 +146,35 @@ public class Config {
             }
         }
         lockables.remove(Material.WALL_SIGN);
+
+        List<String> unprocessedsupers = config.getStringList("superLockables");
+        superLockables = new HashSet<Material>();
+        for (String unprocessedsuper : unprocessedsupers){
+            if (unprocessedsuper.equals("*")){
+                for (Material material : Material.values()){
+                    superLockables.add(material);
+                }
+                plugin.getLogger().info("All blocks are default to be lockable!");
+                plugin.getLogger().info("Add '-<Material>' to exempt a block, such as '-STONE'!");
+                continue;
+            }
+            boolean add = true;
+            if (unprocessedsuper.startsWith("-")){
+                add = false;
+                unprocessedsuper = unprocessedsuper.substring(1);
+            }
+            Material material = Material.getMaterial(unprocessedsuper);
+            if (material == null || !material.isBlock()) {
+                plugin.getLogger().warning(unprocessedsuper + " is not a block!");
+            } else {
+                if (add) {
+                    superLockables.add(material);
+                } else {
+                    superLockables.remove(material);
+                }
+            }
+        }
+        superLockables.remove(Material.WALL_SIGN);
     }
 
     public static void initDefaultConfig(){
@@ -217,6 +247,10 @@ public class Config {
     
     public static boolean isLockable(Material material){
         return lockables.contains(material);
+    }
+
+    public static boolean isSuperLockable(Material material) {
+        return superLockables.contains(material);
     }
     
     public static boolean isPrivateSignString(String message){

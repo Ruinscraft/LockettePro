@@ -43,5 +43,8 @@ lockables:
 - ACACIA_DOOR
 - DARK_OAK_DOOR
 - IRON_DOOR
+superLockables:
+- SPAWNER
+- BEACON
 protection-exempt:
 - nothing
