@@ -55,6 +55,7 @@ public class Dependency {
                     if (!PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), ActionType.BUILD)) return true;
                     // Wilderness permissions
                     if (TownyUniverse.isWilderness(block)){ // It is wilderness here
+                        if (Config.isSuperLockable(block.getType())) return false;
                         if (!player.hasPermission("lockettepro.towny.wilds")) return true;
                     }
                 }

@@ -48,9 +48,12 @@ public class BlockPlayerListener implements Listener {
             BlockFace blockface = event.getBlockFace();
             if (blockface == BlockFace.NORTH || blockface == BlockFace.WEST || blockface == BlockFace.EAST || blockface == BlockFace.SOUTH){
                 Block block = event.getClickedBlock();
+                System.out.println("uhh3.5");
                 // Check permission with external plugin
                 if (Dependency.isProtectedFrom(block, player)) return; // blockwise
-                if (Dependency.isProtectedFrom(block.getRelative(event.getBlockFace()), player)) return; // signwise
+                if (!Config.isSuperLockable(block.getType())) {
+                    if (Dependency.isProtectedFrom(block.getRelative(event.getBlockFace()), player)) return; // signwise
+                }
                 // Check whether locking location is obstructed
                 Block signLoc = block.getRelative(blockface);
                 if (!signLoc.isEmpty()) return;

@@ -225,8 +225,9 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isLockable(Block block){
-		if (!isWithinTown(block)) return false;
 		Material material = block.getType();
+		if (Config.isSuperLockable(material)) return true;
+		if (!isWithinTown(block)) return false;
 		//Bad blocks
 		switch (material){
 		case SIGN:
@@ -237,7 +238,7 @@ public class LocketteProAPI {
 		}
 		if (Config.isLockable(material)){ // Directly lockable
 			return true;
-		} else { // Indirectly lockable
+		} else {
 			Block blockup = block.getRelative(BlockFace.UP);
 			if (blockup != null && isUpDownAlsoLockableBlock(blockup)) return true;
 			Block blockdown = block.getRelative(BlockFace.DOWN);
