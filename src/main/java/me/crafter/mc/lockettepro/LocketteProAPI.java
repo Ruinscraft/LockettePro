@@ -182,6 +182,7 @@ public class LocketteProAPI {
 				if (Config.isLockExpire() && LocketteProAPI.isSignExpired(relativeblock)) {
 					continue; // Private sign but expired... But impossible to have 2 [Private] signs anyway?
 				}
+				if (!isWithinTown(block)) return false;
 				return true;
 			}
 		}
@@ -189,6 +190,7 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isOwnerSingleBlock(Block block, BlockFace exempt, Player player){ // Requires isLocked
+		if (!isWithinTown(block)) return false;
 		for (BlockFace blockface : newsfaces){
 			if (blockface == exempt) continue;
 			Block relativeblock = block.getRelative(blockface);
@@ -259,7 +261,7 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isUpDownAlsoLockableBlock(Block block){
-		if (Config.isLockable(block.getType())){
+		if (Config.isSuperLockable(block.getType()) || Config.isLockable(block.getType())){
 			switch (block.getType()){
 			case OAK_DOOR:
 			case SPRUCE_DOOR:
@@ -379,6 +381,7 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isWithinTown(Block block) {
+		if (Config.isSuperLockable(block.getType())) return true;
 		try {
 			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
 		} catch (NotRegisteredException e) {
@@ -388,7 +391,7 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isLockSign(Block block){
-		return isWithinTown(block) && isSign(block) && isLockString(((Sign)block.getState()).getLine(0));
+		return isSign(block) && isLockString(((Sign)block.getState()).getLine(0));
 	}
 
 	public static boolean isAdditionalSign(Block block){
