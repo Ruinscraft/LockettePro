@@ -1,11 +1,12 @@
 package me.crafter.mc.lockettepro;
 
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -21,19 +22,33 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class Utils {
-    
+
     public static final String usernamepattern = "^[a-zA-Z0-9_]*$";
-    
-    private static Map<Player, Block> selectedsign = new HashMap<Player, Block>();
-    private static Set<Player> notified = new HashSet<Player>();
-        
+    private static LoadingCache<UUID, Block> selectedsign = CacheBuilder.newBuilder()
+            .expireAfterAccess(30, TimeUnit.SECONDS)
+            .build(new CacheLoader<UUID, Block>() {
+                public Block load(UUID key) {
+                    return null;
+                }
+            });
+    private static Set<UUID> notified = new HashSet<>();
+
     // Helper functions
-    public static Block putSignOn(Block block, BlockFace blockface, String line1, String line2){
+    public static Block putSignOn(Block block, BlockFace blockface, String line1, String line2, Material material) {
         Block newsign = block.getRelative(blockface);
-        newsign.setType(Material.WALL_SIGN);
+        Material blockType = Material.getMaterial(material.name().replace("_SIGN", "_WALL_SIGN"));
+        if (blockType != null && Tag.WALL_SIGNS.isTagged(blockType)) {
+            newsign.setType(blockType);
+        } else {
+            newsign.setType(Material.OAK_WALL_SIGN);
+        }
         BlockData data = newsign.getBlockData();
         if(data instanceof Directional){
             ((Directional) data).setFacing(blockface);
@@ -41,18 +56,21 @@ public class Utils {
         }
         updateSign(newsign);
         Sign sign = (Sign)newsign.getState();
+        if (newsign.getType() == Material.DARK_OAK_WALL_SIGN || LockettePro.is16version && newsign.getType() == Material.CRIMSON_WALL_SIGN) {
+            sign.setColor(DyeColor.WHITE);
+        }
         sign.setLine(0, line1);
         sign.setLine(1, line2);
         sign.update();
         return newsign;
     }
-    
+
     public static void setSignLine(Block block, int line, String text){ // Requires isSign
         Sign sign = (Sign)block.getState();
         sign.setLine(line, text);
         sign.update();
     }
-    
+
     public static void removeASign(Player player){
         if (player.getGameMode() == GameMode.CREATIVE) return;
         if (player.getInventory().getItemInMainHand().getAmount() == 1){
@@ -61,43 +79,50 @@ public class Utils {
             player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
         }
     }
-    
+
     public static void updateSign(Block block){
-        ((Sign)block.getState()).update();
+        if (block.getState() instanceof Sign) {
+            ((Sign)block.getState()).update();
+        }
     }
-    
-    public static Block getSelectedSign(Player player){
-        return selectedsign.get(player);
+
+    public static Block getSelectedSign(Player player) {
+        Block b = selectedsign.getIfPresent(player.getUniqueId());
+        if (b != null && !player.getWorld().getName().equals(b.getWorld().getName())) {
+            selectedsign.invalidate(player.getUniqueId());
+            return null;
+        }
+        return b;
     }
-    
+
     public static void selectSign(Player player, Block block){
-        selectedsign.put(player, block);
+        selectedsign.put(player.getUniqueId(), block);
     }
-    
+
     public static void playLockEffect(Player player, Block block){
 //		player.playSound(block.getLocation(), Sound.DOOR_CLOSE, 0.3F, 1.4F);
 //		player.spigot().playEffect(block.getLocation().add(0.5, 0.5, 0.5), Effect.CRIT, 0, 0, 0.3F, 0.3F, 0.3F, 0.1F, 64, 64);
     }
-    
+
     public static void playAccessDenyEffect(Player player, Block block){
 //		player.playSound(block.getLocation(), Sound.VILLAGER_NO, 0.3F, 0.9F);
 //		player.spigot().playEffect(block.getLocation().add(0.5, 0.5, 0.5), Effect.FLAME, 0, 0, 0.3F, 0.3F, 0.3F, 0.01F, 64, 64);
     }
-    
+
     public static void sendMessages(CommandSender sender, String messages){
         if (messages == null || messages.equals("")) return;
         sender.sendMessage(messages);
     }
 
     public static boolean shouldNotify(Player player){
-        if (notified.contains(player)){
+        if (notified.contains(player.getUniqueId())){
             return false;
         } else {
-            notified.add(player);
+            notified.add(player.getUniqueId());
             return true;
         }
     }
-    
+
     public static boolean hasValidCache(Block block){
         List<MetadataValue> metadatas = block.getMetadata("expires");
         if (!metadatas.isEmpty()){
@@ -108,19 +133,19 @@ public class Utils {
         }
         return false;
     }
-    
+
     public static boolean getAccess(Block block){ // Requires hasValidCache()
         List<MetadataValue> metadatas = block.getMetadata("locked");
         return metadatas.get(0).asBoolean();
     }
-    
+
     public static void setCache(Block block, boolean access){
         block.removeMetadata("expires", LockettePro.getPlugin());
         block.removeMetadata("locked", LockettePro.getPlugin());
         block.setMetadata("expires", new FixedMetadataValue(LockettePro.getPlugin(), System.currentTimeMillis() + Config.getCacheTimeMillis()));
         block.setMetadata("locked", new FixedMetadataValue(LockettePro.getPlugin(), access));
     }
-    
+
     public static void resetCache(Block block){
         block.removeMetadata("expires", LockettePro.getPlugin());
         block.removeMetadata("locked", LockettePro.getPlugin());
@@ -132,13 +157,13 @@ public class Utils {
             }
         }
     }
-    
+
     public static void updateUuidOnSign(Block block){
         for (int line = 1; line < 4; line ++){
             updateUuidByUsername(block, line);
         }
     }
-    
+
     public static void updateUuidByUsername(final Block block, final int line){
         Sign sign = (Sign)block.getState();
         final String original = sign.getLine(line);
@@ -169,7 +194,7 @@ public class Utils {
             }
         });
     }
-    
+
     public static void updateUsernameByUuid(Block block, int line){
         Sign sign = (Sign)block.getState();
         String original = sign.getLine(line);
@@ -181,11 +206,11 @@ public class Utils {
             }
         }
     }
-    
+
     public static void updateLineByPlayer(Block block, int line, Player player){
         setSignLine(block, line, player.getName() + "#" + player.getUniqueId().toString());
     }
-    
+
     public static void updateLineWithTime(Block block, boolean noexpire){
         Sign sign = (Sign)block.getState();
         if (noexpire){
@@ -195,7 +220,7 @@ public class Utils {
         }
         sign.update();
     }
-    
+
     public static boolean isUserName(String text){
         if (text.length() < 17 && text.length() > 2 && text.matches(usernamepattern)){
             return true;
@@ -203,7 +228,7 @@ public class Utils {
             return false;
         }
     }
-    
+
     // Warning: don't use this in a sync way
     public static String getUuidByUsernameFromMojang(String username){
         try {
@@ -224,7 +249,7 @@ public class Utils {
         } catch (Exception ex){}
         return null;
     }
-    
+
     public static boolean isUsernameUuidLine(String text){
         if (text.contains("#")){
             String[] splitted = text.split("#", 2);
@@ -234,7 +259,7 @@ public class Utils {
         }
         return false;
     }
-    
+
     public static boolean isPrivateTimeLine(String text){
         if (text.contains("#")){
             String[] splitted = text.split("#", 2);
@@ -244,7 +269,7 @@ public class Utils {
         }
         return false;
     }
-    
+
     public static String StripSharpSign(String text){
         if (text.contains("#")){
             return text.split("#", 2)[0];
@@ -252,7 +277,7 @@ public class Utils {
             return text;
         }
     }
-    
+
     public static String getUsernameFromLine(String text){
         if (isUsernameUuidLine(text)){
             return text.split("#", 2)[0];
@@ -260,7 +285,7 @@ public class Utils {
             return text;
         }
     }
-    
+
     public static String getUuidFromLine(String text){
         if (isUsernameUuidLine(text)){
             return text.split("#", 2)[1];
@@ -268,7 +293,7 @@ public class Utils {
             return null;
         }
     }
-    
+
     public static long getCreatedFromLine(String text){
         if (isPrivateTimeLine(text)){
             return Long.parseLong(text.split("#created:", 2)[1]);
@@ -276,7 +301,7 @@ public class Utils {
             return Config.getLockDefaultCreateTimeUnix();
         }
     }
-    
+
     public static boolean isPlayerOnLine(Player player, String text){
         if (Utils.isUsernameUuidLine(text)){
             if (Config.isUuidEnabled()){
@@ -288,7 +313,7 @@ public class Utils {
             return text.equals(player.getName());
         }
     }
-    
+
     public static String getSignLineFromUnknown(WrappedChatComponent rawline){
         String json = rawline.getJson();
         return getSignLineFromUnknown(json);

@@ -18,31 +18,23 @@ public class LockettePro extends JavaPlugin {
 
     private static Plugin plugin;
     private boolean debug = false;
-    private static Version version = Version.UNKNOWN;
     private static boolean needcheckhand = true;
+    public static boolean is16version = true;
 
     public void onEnable(){
-        // Version
-        String versionname = "v" + Bukkit.getServer().getClass().getPackage().getName().split("v")[1];
-        try {
-            version = Version.valueOf(versionname);
-        } catch (Exception ex) {
-            version = Version.UNKNOWN;
-            getLogger().warning("===================================");
-            getLogger().warning("Unsupported server version: " + Bukkit.getBukkitVersion());
-            try {
-                Tag.ANVIL.getValues();
-                Material.TRIDENT.isItem();
-            } catch (Exception e) {
-                setEnabled(false);
-                getLogger().warning("This plugin is not compatible with your server version!");
-            }
-            getLogger().warning("===================================");
-            if (!isEnabled()) {
-                return;
-            }
-        }
         plugin = this;
+        checkMcVersion();
+        // Version
+        try {
+            Material.BARREL.isItem();
+        } catch (Exception e) {
+            setEnabled(false);
+            getLogger().warning("This plugin is not compatible with your server version!");
+        }
+        getLogger().info("===================================");
+        if (!isEnabled()) {
+            return;
+        }
         // Read config
         new Config(this);
         // Register Listeners
@@ -55,18 +47,36 @@ public class LockettePro extends JavaPlugin {
         new Dependency(this);
         // If UUID is not enabled, UUID listener won't register
         if (Config.isUuidEnabled() || Config.isLockExpire()){
-            if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null){
+            if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")){
                 DependencyProtocolLib.setUpProtocolLib(this);
             } else {
                 plugin.getLogger().info("ProtocolLib is not found!");
-                plugin.getLogger().info("UUID & expiracy support requires ProtocolLib, or else signs will be ugly!");
+                plugin.getLogger().info("UUID & expiry support requires ProtocolLib, or else signs will be ugly!");
             }
         }
     }
     
     public void onDisable(){
-        if (Config.isUuidEnabled() && Bukkit.getPluginManager().getPlugin("ProtocolLib") != null){
+        if (Config.isUuidEnabled() && Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")){
             DependencyProtocolLib.cleanUpProtocolLib(this);
+        }
+    }
+
+    private void checkMcVersion() {
+        String[] serverVersion = Bukkit.getBukkitVersion().split("-");
+        String version = serverVersion[0];
+        if (version.matches("1.16") || version.matches("1.16.1") || version.matches("1.16.2") || version.matches("1.16.3") || version.matches("1.16.4") || version.matches("1.16.5")) {
+            plugin.getLogger().info("Compatible server version detected: " + version);
+            is16version = true;
+        } else if (version.matches("1.15") || version.matches("1.15.1") || version.matches("1.15.2")) {
+            plugin.getLogger().info("Compatible server version detected: " + version);
+            is16version = false;
+        } else if (version.matches("1.14") || version.matches("1.14.1") || version.matches("1.14.2") || version.matches("1.14.3") || version.matches("1.14.4")) {
+            plugin.getLogger().info("Compatible server version detected: " + version);
+            is16version = false;
+        } else {
+            plugin.getLogger().info("Incompatible server version detected: " + version + " . Trying to run into 1.16 compatibility mode!");
+            is16version = true;
         }
     }
     
@@ -76,10 +86,6 @@ public class LockettePro extends JavaPlugin {
     
     public static boolean needCheckHand(){
         return needcheckhand;
-    }
-    
-    public static Version getBukkitVersion(){
-        return version;
     }
 
     @Override
@@ -141,7 +147,7 @@ public class LockettePro extends JavaPlugin {
                             // Basic
                             sender.sendMessage("LockettePro: " + getDescription().getVersion());
                             // Version
-                            sender.sendMessage("Bukkit: " + "v" + Bukkit.getServer().getClass().getPackage().getName().split("v")[1] + " / LockettePro: " + version);
+                            sender.sendMessage("Bukkit: " + "v" + Bukkit.getServer().getClass().getPackage().getName().split("v")[1]);
                             sender.sendMessage("Server version: " + Bukkit.getVersion());
                             // Config
                             sender.sendMessage("UUID: " + Config.isUuidEnabled());
@@ -160,13 +166,13 @@ public class LockettePro extends JavaPlugin {
                                 linked = true;
                                 sender.sendMessage(" - Worldguard: " + Dependency.worldguard.getDescription().getVersion());
                             }
-                            if (Dependency.towny != null) {
-                                linked = true;
-                                sender.sendMessage(" - Towny: " + Dependency.towny.getDescription().getVersion());
-                            }
                             if (Dependency.vault != null) {
                                 linked = true;
                                 sender.sendMessage(" - Vault: " + Dependency.vault.getDescription().getVersion());
+                            }
+                            if (Bukkit.getPluginManager().getPlugin("CoreProtect") != null) {
+                                linked = true;
+                                sender.sendMessage(" - CoreProtect: " + Bukkit.getPluginManager().getPlugin("CoreProtect").getDescription().getVersion());
                             }
                             if (!linked) {
                                 sender.sendMessage(" - none");

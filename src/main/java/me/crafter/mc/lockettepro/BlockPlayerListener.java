@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerTakeLecternBookEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -27,16 +29,15 @@ import java.util.List;
 public class BlockPlayerListener implements Listener {
 
     // Quick protect for chests
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerQuickLockChest(PlayerInteractEvent event){
-        if (event.isCancelled()) return;
         // Check quick lock enabled
         if (Config.getQuickProtectAction() == (byte)0) return;
         // Get player and action info
         Action action = event.getAction();
         Player player = event.getPlayer();
         // Check action correctness
-        if (action == Action.RIGHT_CLICK_BLOCK && player.getInventory().getItemInMainHand().getType() == Material.SIGN){
+        if (action == Action.RIGHT_CLICK_BLOCK && Tag.SIGNS.isTagged(player.getInventory().getItemInMainHand().getType())) {
             if (player.getGameMode().equals(GameMode.SPECTATOR)) {
                 return;
             }
@@ -47,8 +48,9 @@ public class BlockPlayerListener implements Listener {
             if (!player.hasPermission("lockettepro.lock")) return;
             // Get target block to lock
             BlockFace blockface = event.getBlockFace();
-            if (blockface == BlockFace.NORTH || blockface == BlockFace.WEST || blockface == BlockFace.EAST || blockface == BlockFace.SOUTH){
+            if (blockface == BlockFace.NORTH || blockface == BlockFace.WEST || blockface == BlockFace.EAST || blockface == BlockFace.SOUTH) {
                 Block block = event.getClickedBlock();
+                if (block == null) return;
                 // Check permission with external plugin
                 if (Dependency.isProtectedFrom(block, player)) {
                     player.sendMessage(ChatColor.RED + "This block cannot be protected here.");
@@ -71,12 +73,13 @@ public class BlockPlayerListener implements Listener {
                     event.setCancelled(true);
                     // Check lock info info
                     if (!locked && !LocketteProAPI.isUpDownLockedDoor(block)){
+                        Material signType = player.getInventory().getItemInMainHand().getType();
                         // Not locked, not a locked door nearby
                         Utils.removeASign(player);
                         // Send message
                         Utils.sendMessages(player, Config.getLang("locked-quick"));
                         // Put sign on
-                        Block newsign = Utils.putSignOn(block, blockface, Config.getDefaultPrivateString(), player.getName());
+                        Block newsign = Utils.putSignOn(block, blockface, Config.getDefaultPrivateString(), player.getName(), signType);
                         Utils.resetCache(block);
                         // Cleanups - UUID
                         if (Config.isUuidEnabled()){
@@ -92,13 +95,15 @@ public class BlockPlayerListener implements Listener {
                         }
                     } else if (!locked && LocketteProAPI.isOwnerUpDownLockedDoor(block, player)){
                         // Not locked, (is locked door nearby), is owner of locked door nearby
+                        Material signType = player.getInventory().getItemInMainHand().getType();
                         Utils.removeASign(player);
                         Utils.sendMessages(player, Config.getLang("additional-sign-added-quick"));
-                        Utils.putSignOn(block, blockface, Config.getDefaultAdditionalString(), "");
-                    } else if (LocketteProAPI.isOwner(block, player)){
+                        Utils.putSignOn(block, blockface, Config.getDefaultAdditionalString(), "", signType);
+                    } else if (LocketteProAPI.isOwner(block, player)) {
                         // Locked, (not locked door nearby), is owner of locked block
+                        Material signType = player.getInventory().getItemInMainHand().getType();
                         Utils.removeASign(player);
-                        Utils.putSignOn(block, blockface, Config.getDefaultAdditionalString(), "");
+                        Utils.putSignOn(block, blockface, Config.getDefaultAdditionalString(), "", signType);
                         Utils.sendMessages(player, Config.getLang("additional-sign-added-quick"));
                     } else {
                         // Cannot lock this block
@@ -112,8 +117,9 @@ public class BlockPlayerListener implements Listener {
     // Manual protection
     @EventHandler(priority = EventPriority.NORMAL)
     public void onManualLock(SignChangeEvent event){
-        if (event.getBlock().getType() != Material.WALL_SIGN) return;
+        if (!Tag.WALL_SIGNS.isTagged(event.getBlock().getType())) return;
         String topline = event.getLine(0);
+        if (topline == null) topline = "";
         Player player = event.getPlayer();
         /*  Issue #46 - Old version of Minecraft trim signs in unexpected way.
          *  This is caused by Minecraft was doing: (unconfirmed but seemingly)
@@ -133,7 +139,7 @@ public class BlockPlayerListener implements Listener {
                 return;
             }
         }
-        if (LocketteProAPI.isLockString(topline) || LocketteProAPI.isAdditionalString(topline)){
+        if (LocketteProAPI.isLockString(topline) || LocketteProAPI.isAdditionalString(topline)) {
             Block block = LocketteProAPI.getAttachedBlock(event.getBlock());
             if (LocketteProAPI.isLockable(block)){
                 if (Dependency.isProtectedFrom(block, player)){ // External check here
@@ -142,10 +148,10 @@ public class BlockPlayerListener implements Listener {
                     return; 
                 }
                 boolean locked = LocketteProAPI.isLocked(block);
-                if (!locked && !LocketteProAPI.isUpDownLockedDoor(block)){
-                    if (LocketteProAPI.isLockString(topline)){
+                if (!locked && !LocketteProAPI.isUpDownLockedDoor(block)) {
+                    if (LocketteProAPI.isLockString(topline)) {
                         Utils.sendMessages(player, Config.getLang("locked-manual"));
-                        if (!player.hasPermission("lockettepro.lockothers")){ // Player with permission can lock with another name
+                        if (!player.hasPermission("lockettepro.lockothers")) { // Player with permission can lock with another name
                             event.setLine(1, player.getName());
                         }
                         Utils.resetCache(block);
@@ -153,15 +159,15 @@ public class BlockPlayerListener implements Listener {
                         Utils.sendMessages(player, Config.getLang("not-locked-yet-manual"));
                         event.setLine(0, Config.getLang("sign-error"));
                     }
-                } else if (!locked && LocketteProAPI.isOwnerUpDownLockedDoor(block, player)){
-                    if (LocketteProAPI.isLockString(topline)){
+                } else if (!locked && LocketteProAPI.isOwnerUpDownLockedDoor(block, player)) {
+                    if (LocketteProAPI.isLockString(topline)) {
                         Utils.sendMessages(player, Config.getLang("cannot-lock-door-nearby-manual"));
                         event.setLine(0, Config.getLang("sign-error"));
                     } else {
                         Utils.sendMessages(player, Config.getLang("additional-sign-added-manual"));
                     }
-                } else if (LocketteProAPI.isOwner(block, player)){
-                    if (LocketteProAPI.isLockString(topline)){
+                } else if (LocketteProAPI.isOwner(block, player)) {
+                    if (LocketteProAPI.isLockString(topline)) {
                         Utils.sendMessages(player, Config.getLang("block-already-locked-manual"));
                         event.setLine(0, Config.getLang("sign-error"));
                     } else {
@@ -182,12 +188,13 @@ public class BlockPlayerListener implements Listener {
     
     // Player select sign
     @EventHandler(priority = EventPriority.LOW)
-    public void playerSelectSign(PlayerInteractEvent event){
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock().getType() == Material.WALL_SIGN){
-            Block block = event.getClickedBlock();
+    public void playerSelectSign(PlayerInteractEvent event) {
+        Block block = event.getClickedBlock();
+        if (block == null) return;
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.hasBlock() && Tag.WALL_SIGNS.isTagged(block.getType())) {
             Player player = event.getPlayer();
             if (!player.hasPermission("lockettepro.edit")) return;
-            if (LocketteProAPI.isOwnerOfSign(block, player) || (LocketteProAPI.isLockSignOrAdditionalSign(block) && player.hasPermission("lockettepro.admin.edit"))){
+            if (LocketteProAPI.isOwnerOfSign(block, player) || (LocketteProAPI.isLockSignOrAdditionalSign(block) && player.hasPermission("lockettepro.admin.edit"))) {
                 Utils.selectSign(player, block);
                 Utils.sendMessages(player, Config.getLang("sign-selected"));
                 Utils.playLockEffect(player, block);
@@ -244,16 +251,20 @@ public class BlockPlayerListener implements Listener {
 
     // Protect block from being used & handle double doors
     @EventHandler(priority = EventPriority.HIGH)
-    public void onAttemptInteractLockedBlocks(PlayerInteractEvent event){
+    public void onAttemptInteractLockedBlocks(PlayerInteractEvent event) {
+        if (event.hasBlock() == false) return;
         Action action = event.getAction();
         Block block = event.getClickedBlock();
-        if (LockettePro.needCheckHand()){
-            if (event.getHand() != EquipmentSlot.HAND){
-                if (action == Action.RIGHT_CLICK_BLOCK){
-                    if (LocketteProAPI.isChest(block)){
+        if (LockettePro.needCheckHand() && LocketteProAPI.isChest(block)) {
+            if (event.getHand() != EquipmentSlot.HAND) {
+                if (action == Action.RIGHT_CLICK_BLOCK) {
+                    /*
+                    if (LocketteProAPI.isChest(block)) {
                         // something not right
                         event.setCancelled(true);
                     }
+                    */
+                    event.setCancelled(true);
                     return;
                 }
             }
@@ -270,19 +281,19 @@ public class BlockPlayerListener implements Listener {
                 Utils.playAccessDenyEffect(player, block);
             } else { // Handle double doors
                 if (action == Action.RIGHT_CLICK_BLOCK){
-                    if ((LocketteProAPI.isDoubleDoorBlock(block) || LocketteProAPI.isSingleDoorBlock(block)) && LocketteProAPI.isLocked(block)){
+                    if ((LocketteProAPI.isDoubleDoorBlock(block) || LocketteProAPI.isSingleDoorBlock(block)) && LocketteProAPI.isLocked(block)) {
                         Block doorblock = LocketteProAPI.getBottomDoorBlock(block);
-                        org.bukkit.block.data.Openable openablestate = (org.bukkit.block.data.Openable ) doorblock.getBlockData();
+                        org.bukkit.block.data.Openable openablestate = (org.bukkit.block.data.Openable) doorblock.getBlockData();
                         boolean shouldopen = !openablestate.isOpen(); // Move to here
                         int closetime = LocketteProAPI.getTimerDoor(doorblock);
                         List<Block> doors = new ArrayList<Block>();
                         doors.add(doorblock);
-                        if (doorblock.getType() == Material.IRON_DOOR || doorblock.getType() == Material.IRON_TRAPDOOR){
+                        if (doorblock.getType() == Material.IRON_DOOR || doorblock.getType() == Material.IRON_TRAPDOOR) {
                             LocketteProAPI.toggleDoor(doorblock, shouldopen);
                         }
-                        for (BlockFace blockface : LocketteProAPI.newsfaces){
+                        for (BlockFace blockface : LocketteProAPI.newsfaces) {
                             Block relative = doorblock.getRelative(blockface);
-                            if (relative.getType() == doorblock.getType()){
+                            if (relative.getType() == doorblock.getType()) {
                                 doors.add(relative);
                                 LocketteProAPI.toggleDoor(relative, shouldopen);
                             }
@@ -308,13 +319,12 @@ public class BlockPlayerListener implements Listener {
     }
     
     // Protect block from interfere block
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onAttemptPlaceInterfereBlocks(BlockPlaceEvent event){
-        if (event.isCancelled()) return;
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onAttemptPlaceInterfereBlocks(BlockPlaceEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
         if (player.hasPermission("lockettepro.admin.interfere")) return;
-        if (LocketteProAPI.mayInterfere(block, player)){
+        if (LocketteProAPI.mayInterfere(block, player)) {
             Utils.sendMessages(player, Config.getLang("cannot-interfere-with-others"));
             event.setCancelled(true);
             Utils.playAccessDenyEffect(player, block);		
@@ -322,9 +332,8 @@ public class BlockPlayerListener implements Listener {
     }
     
     // Tell player about lockettepro
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlaceFirstBlockNotify(BlockPlaceEvent event){
-        if (event.isCancelled()) return;
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlaceFirstBlockNotify(BlockPlaceEvent event) {
         Block block = event.getBlock();
         Player player = event.getPlayer();
         if (!player.hasPermission("lockettepro.lock")) return;
@@ -363,6 +372,15 @@ public class BlockPlayerListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlockClicked().getRelative(event.getBlockFace());
         if (LocketteProAPI.isProtected(block) && !(LocketteProAPI.isOwner(block, player) || LocketteProAPI.isOwnerOfSign(block, player))) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onLecternTake(PlayerTakeLecternBookEvent event){
+        Player player = event.getPlayer();
+        Block block = event.getLectern().getBlock();
+        if(LocketteProAPI.isProtected(block) && !(LocketteProAPI.isOwner(block, player) || LocketteProAPI.isOwnerOfSign(block, player))){
             event.setCancelled(true);
         }
     }

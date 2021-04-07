@@ -2,6 +2,7 @@ package me.crafter.mc.lockettepro;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -37,6 +38,7 @@ public class Config {
     private static byte blockhopperminecart = 0;
     private static boolean lockexpire = false;
     private static double lockexpiredays = 60D;
+    public static boolean protocollib = false;
     private static long lockdefaultcreatetime = -1L;
     private static String lockexpirestring = "";
     private static Set<String> protectionexempt = new HashSet<String>();
@@ -51,6 +53,7 @@ public class Config {
         initAdditionalFiles();
         config = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "config.yml"));
         uuid = config.getBoolean("enable-uuid-support", false);
+        protocollib = config.getBoolean("protocollib", true);
         langfilename = config.getString("language-file-name", "lang.yml");
         lang = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), langfilename));
         String enablequickprotectstring = config.getString("enable-quick-protect", "true");
@@ -145,7 +148,8 @@ public class Config {
                 }
             }
         }
-        lockables.remove(Material.WALL_SIGN);
+        lockables.removeAll(Tag.SIGNS.getValues());
+        lockables.remove(Material.SCAFFOLDING);
 
         List<String> unprocessedsupers = config.getStringList("superLockables");
         superLockables = new HashSet<Material>();
@@ -174,7 +178,8 @@ public class Config {
                 }
             }
         }
-        superLockables.remove(Material.WALL_SIGN);
+        superLockables.removeAll(Tag.SIGNS.getValues());
+        superLockables.remove(Material.SCAFFOLDING);
     }
 
     public static void initDefaultConfig(){
@@ -198,7 +203,7 @@ public class Config {
         String[] timer_signs = {"[Timer:@]", "[timer:@]"};
         config.addDefault("timer-signs", timer_signs);
         String[] lockables = {"CHEST","TRAPPED_CHEST","FURNACE","BURNING_FURNACE","HOPPER","BREWING_STAND","DIAMOND_BLOCK",
-                "OAK_DOOR","SPRUCE_DOOR","BIRCH_DOOR","JUNGLE_DOOR","ACACIA_DOOR","DARK_OAK_DOOR","IRON_DOOR"};
+                "OAK_DOOR","SPRUCE_DOOR","BIRCH_DOOR","JUNGLE_DOOR","ACACIA_DOOR","DARK_OAK_DOOR","IRON_DOOR", "LECTERN", "CRIMSON_DOOR", "WARPED_DOOR"};
         config.addDefault("lockables", lockables);
         String[] protection_exempt = {"nothing"};
         config.addDefault("protection-exempt", protection_exempt);

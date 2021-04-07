@@ -1,7 +1,7 @@
 package me.crafter.mc.lockettepro;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -12,7 +12,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 public class BlockDebugListener implements Listener {
-    
+
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDebugClick(PlayerInteractEvent event){
@@ -33,18 +33,18 @@ public class BlockDebugListener implements Listener {
                 p.sendMessage(" - created: " + Utils.getCreatedFromLine(((Sign)b.getState()).getLine(0)));
                 p.sendMessage(" - now     : " + (int)(System.currentTimeMillis()/1000));
             }
-            
+
             p.sendMessage("Block: " + b.getType().toString() + " " + b.getData());
-            
-            if (b.getType() == Material.WALL_SIGN){
+
+            if (Tag.WALL_SIGNS.isTagged(b.getType())){
                 for (String line : ((Sign)b.getState()).getLines()){
                     p.sendMessage(ChatColor.GREEN + line);
                 }
             }
             p.sendMessage(p.getUniqueId().toString());
-        }	
+        }
     }
-    
+
     public String formatBoolean(boolean tf){
         if (tf){
             return ChatColor.GREEN + "true";

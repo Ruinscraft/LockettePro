@@ -7,6 +7,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Waterlogged;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.entity.Player;
 
@@ -33,6 +36,8 @@ public class LocketteProAPI {
 		case JUNGLE_DOOR:
 		case ACACIA_DOOR:
 		case DARK_OAK_DOOR:
+		case CRIMSON_DOOR:
+		case WARPED_DOOR:
 		case IRON_DOOR:
 			Block[] doors = getDoors(block);
 			if (doors == null) return false;
@@ -51,6 +56,8 @@ public class LocketteProAPI {
 			if (isLockedSingleBlock(doors[0].getRelative(BlockFace.DOWN), null)) return true;
 			break;
 			// Chests (Second block only)
+		case LECTERN:
+			return isLockedSingleBlock(block, null);
 		case CHEST:
 		case TRAPPED_CHEST:
 			// Check second chest sign
@@ -66,6 +73,70 @@ public class LocketteProAPI {
 			break;
 		}
 		return false;
+	}
+
+	public static String getOwner(Block block){
+		switch (block.getType()){
+			// Double Doors
+			case OAK_DOOR:
+			case SPRUCE_DOOR:
+			case BIRCH_DOOR:
+			case JUNGLE_DOOR:
+			case ACACIA_DOOR:
+			case DARK_OAK_DOOR:
+			case CRIMSON_DOOR:
+			case WARPED_DOOR:
+			case IRON_DOOR:
+				Block[] doors = getDoors(block);
+				if (doors == null) return null;
+				for (BlockFace doorface : newsfaces){
+					Block relative0 = doors[0].getRelative(doorface), relative1 = doors[1].getRelative(doorface);
+					if (relative0.getType() == doors[0].getType() && relative1.getType() == doors[1].getType()){
+						String f1 = getLockOwnerSingleBlock(relative1.getRelative(BlockFace.UP), doorface.getOppositeFace());
+						String f2 = getLockOwnerSingleBlock(relative1, doorface.getOppositeFace());
+						String f3 = getLockOwnerSingleBlock(relative0, doorface.getOppositeFace());
+						String f4 = getLockOwnerSingleBlock(relative0.getRelative(BlockFace.DOWN), doorface.getOppositeFace());
+						if (f1 != null) {
+							return f1;
+						} else if (f2 != null) {
+							return f2;
+						} else if (f3 != null) {
+							return f3;
+						} else if (f4 != null) {
+							return f4;
+						}
+					}
+				}
+				String f1 = getLockOwnerSingleBlock(doors[1].getRelative(BlockFace.UP), null);
+				String f2 = getLockOwnerSingleBlock(doors[1], null);
+				String f3 = getLockOwnerSingleBlock(doors[0], null);
+				String f4 = getLockOwnerSingleBlock(doors[0].getRelative(BlockFace.DOWN), null);
+				if (f1 != null) {
+					return f1;
+				} else if (f2 != null) {
+					return f2;
+				} else if (f3 != null) {
+					return f3;
+				} else if (f4 != null) {
+					return f4;
+				}
+				break;
+			case LECTERN:
+				return getLockOwnerSingleBlock(block, null);
+			case CHEST:
+			case TRAPPED_CHEST:
+				// Check second chest sign
+				BlockFace chestface = getRelativeChestFace(block);
+				if (chestface != null) {
+					Block relativechest = block.getRelative(chestface);
+					return getLockOwnerSingleBlock(relativechest, chestface.getOppositeFace());
+				}
+				// Don't break here
+				// Everything else (First block of container check goes here)
+			default:
+				return getLockOwnerSingleBlock(block, null);
+		}
+		return null;
 	}
 
 	public static boolean isOwner(Block block, Player player){
@@ -84,6 +155,8 @@ public class LocketteProAPI {
 			case JUNGLE_DOOR:
 			case ACACIA_DOOR:
 			case DARK_OAK_DOOR:
+			case CRIMSON_DOOR:
+			case WARPED_DOOR:
 			case IRON_DOOR:
 				Block[] doors = getDoors(block);
 				if (doors == null) return false;
@@ -102,6 +175,8 @@ public class LocketteProAPI {
 				if (isOwnerSingleBlock(doors[0].getRelative(BlockFace.DOWN), null, player)) return true;
 				break;
 			// Chests (Second block only)
+			case LECTERN:
+				return isOwnerSingleBlock(block, null, player);
 			case CHEST:
 			case TRAPPED_CHEST:
 				// Check second chest sign
@@ -128,6 +203,8 @@ public class LocketteProAPI {
 			case JUNGLE_DOOR:
 			case ACACIA_DOOR:
 			case DARK_OAK_DOOR:
+			case CRIMSON_DOOR:
+			case WARPED_DOOR:
 			case IRON_DOOR:
 				Block[] doors = getDoors(block);
 				if (doors == null) return false;
@@ -146,6 +223,8 @@ public class LocketteProAPI {
 				if (isUserSingleBlock(doors[0].getRelative(BlockFace.DOWN), null, player)) return true;
 				break;
 			// Chests (Second block only)
+			case LECTERN:
+				return isUserSingleBlock(block, null, player);
 			case CHEST:
 			case TRAPPED_CHEST:
 				// Check second chest sign
@@ -177,7 +256,7 @@ public class LocketteProAPI {
 			if (blockface == exempt) continue;
 			Block relativeblock = block.getRelative(blockface);
 			// Find [Private] sign?
-			if (isLockSign(relativeblock) && (((org.bukkit.material.Sign)relativeblock.getState().getData()).getFacing() == blockface)){
+			if (isLockSign(relativeblock) && getFacing(relativeblock) == blockface){
 				// Found [Private] sign, is expire turned on and expired? (relativeblock is now sign)
 				if (Config.isLockExpire() && LocketteProAPI.isSignExpired(relativeblock)) {
 					continue; // Private sign but expired... But impossible to have 2 [Private] signs anyway?
@@ -194,7 +273,7 @@ public class LocketteProAPI {
 		for (BlockFace blockface : newsfaces){
 			if (blockface == exempt) continue;
 			Block relativeblock = block.getRelative(blockface);
-			if (isLockSign(relativeblock) && (((org.bukkit.material.Sign)relativeblock.getState().getData()).getFacing() == blockface)){
+			if (isLockSign(relativeblock) && getFacing(relativeblock) == blockface){
 				if (isOwnerOnSign(relativeblock, player)){
 					return true;
 				}
@@ -203,11 +282,22 @@ public class LocketteProAPI {
 		return false;
 	}
 
+	public static String getLockOwnerSingleBlock(Block block, BlockFace exempt) {
+		for (BlockFace blockface : newsfaces){
+			if (blockface == exempt) continue;
+			Block relativeblock = block.getRelative(blockface);
+			if (isLockSign(relativeblock) && getFacing(relativeblock) == blockface){
+				return getOwnerOnSign(relativeblock);
+			}
+		}
+		return null;
+	}
+
 	public static boolean isUserSingleBlock(Block block, BlockFace exempt, Player player){ // Requires isLocked
 		for (BlockFace blockface : newsfaces){
 			if (blockface == exempt) continue;
 			Block relativeblock = block.getRelative(blockface);
-			if (isLockSignOrAdditionalSign(relativeblock) && (((org.bukkit.material.Sign)relativeblock.getState().getData()).getFacing() == blockface)){
+			if (isLockSignOrAdditionalSign(relativeblock) && getFacing(relativeblock) == blockface){
 				if (isUserOnSign(relativeblock, player)){
 					return true;
 				}
@@ -231,16 +321,12 @@ public class LocketteProAPI {
 		if (Config.isSuperLockable(material)) return true;
 		if (!isWithinTown(block)) return false;
 		//Bad blocks
-		switch (material){
-		case SIGN:
-		case WALL_SIGN:
+		if(Tag.SIGNS.isTagged(material)){
 			return false;
-		default:
-			break;
 		}
 		if (Config.isLockable(material)){ // Directly lockable
 			return true;
-		} else {
+		} else { // Indirectly lockable
 			Block blockup = block.getRelative(BlockFace.UP);
 			if (blockup != null && isUpDownAlsoLockableBlock(blockup)) return true;
 			Block blockdown = block.getRelative(BlockFace.DOWN);
@@ -251,6 +337,9 @@ public class LocketteProAPI {
 
 
 	public static boolean isChest(Block block){
+		if (block == null) {
+			return false;
+		}
 		switch (block.getType()){
 		case CHEST:
 		case TRAPPED_CHEST:
@@ -295,6 +384,8 @@ public class LocketteProAPI {
 		case JUNGLE_DOOR:
 		case ACACIA_DOOR:
 		case DARK_OAK_DOOR:
+		case CRIMSON_DOOR:
+		case WARPED_DOOR:
 		case IRON_DOOR:
 			for (BlockFace blockface : newsfaces){
 				Block newblock = block.getRelative(blockface);
@@ -305,6 +396,8 @@ public class LocketteProAPI {
 				case JUNGLE_DOOR:
 				case ACACIA_DOOR:
 				case DARK_OAK_DOOR:
+				case CRIMSON_DOOR:
+				case WARPED_DOOR:
 				case IRON_DOOR:
 					if (isLocked(newblock) && !isOwner(newblock, player)){
 						return true;
@@ -334,8 +427,12 @@ public class LocketteProAPI {
 			// End temp workaround bad code for checking up and down signs
 		case CHEST:
 		case TRAPPED_CHEST:
-		case WALL_SIGN:
-		case SIGN:
+		case OAK_WALL_SIGN:
+		case SPRUCE_SIGN:
+		case BIRCH_SIGN:
+		case JUNGLE_SIGN:
+		case ACACIA_SIGN:
+		case DARK_OAK_SIGN:
 			for (BlockFace blockface : allfaces){
 				Block newblock = block.getRelative(blockface);
 				switch (newblock.getType()){
@@ -377,7 +474,7 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isSign(Block block){
-		return block.getType() == Material.WALL_SIGN;
+		return Tag.WALL_SIGNS.isTagged(block.getType());
 	}
 
 	public static boolean isWithinTown(Block block) {
@@ -418,6 +515,11 @@ public class LocketteProAPI {
 		return false;
 	}
 
+	public static String getOwnerOnSign(Block block){ // Requires isLockSign
+		String[] lines = ((Sign)block.getState()).getLines();
+		return lines[1];
+	}
+
 	public static boolean isUserOnSign(Block block, Player player){ // Requires (isLockSign or isAdditionalSign)
 		String[] lines = ((Sign)block.getState()).getLines();
 		// Normal
@@ -454,6 +556,9 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isUpDownLockedDoor(Block block){
+		if (block == null) {
+			return false;
+		}
 		Block blockup = block.getRelative(BlockFace.UP);
 		if (blockup != null && isUpDownAlsoLockableBlock(blockup) && isLocked(blockup)) return true;
 		Block blockdown = block.getRelative(BlockFace.DOWN);
@@ -492,7 +597,8 @@ public class LocketteProAPI {
 	}
 
 	public static Block getAttachedBlock(Block sign){ // Requires isSign
-		return sign.getRelative(((org.bukkit.material.Sign) sign.getState().getData()).getFacing().getOppositeFace());
+		BlockFace facing = getFacing(sign);
+		return sign.getRelative(facing.getOppositeFace());
 	}
 
 	public static int getTimerOnSigns(Block block){
@@ -558,17 +664,31 @@ public class LocketteProAPI {
 	}
 
 	public static boolean isDoubleDoorBlock(Block block){
+		if (block == null) {
+			return false;
+		}
 		return Tag.DOORS.isTagged(block.getType());
 	}
 
 	public static boolean isSingleDoorBlock(Block block){
+		if (block == null) {
+			return false;
+		}
 		switch (block.getType()){
 		case OAK_FENCE_GATE:
 		case SPRUCE_FENCE_GATE:
 		case BIRCH_FENCE_GATE:
-		case JUNGLE_FENCE:
-		case ACACIA_DOOR: 
-		case DARK_OAK_DOOR:
+		case CRIMSON_FENCE_GATE:
+		case WARPED_FENCE_GATE:
+		case ACACIA_FENCE_GATE:
+		case JUNGLE_FENCE_GATE:
+		case ACACIA_TRAPDOOR:
+		case DARK_OAK_TRAPDOOR:
+		case CRIMSON_TRAPDOOR:
+		case WARPED_TRAPDOOR:
+		case BIRCH_TRAPDOOR:
+		case OAK_TRAPDOOR:
+		case SPRUCE_TRAPDOOR:
 		case IRON_TRAPDOOR:
 			return true;
 		default:
@@ -629,5 +749,25 @@ public class LocketteProAPI {
 			}
 		}
 		return relativeFace;
+	}
+
+	public static BlockFace getFacing(Block block) {
+		BlockData data = block.getBlockData();
+		BlockFace f = null;
+		if (data instanceof Directional && data instanceof Waterlogged && ((Waterlogged) data).isWaterlogged()) {
+			String str = ((Directional) data).toString();
+			if (str.contains("facing=west")) {
+				f = BlockFace.WEST;
+			} else if (str.contains("facing=east")) {
+				f = BlockFace.EAST;
+			} else if (str.contains("facing=south")) {
+				f = BlockFace.SOUTH;
+			} else if (str.contains("facing=north")) {
+				f = BlockFace.NORTH;
+			}
+		} else if (data instanceof Directional) {
+			f = ((Directional) data).getFacing();
+		}
+		return f;
 	}
 }
