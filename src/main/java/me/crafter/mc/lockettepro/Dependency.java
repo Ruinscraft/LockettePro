@@ -7,9 +7,7 @@ import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyPermission.ActionType;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -18,7 +16,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.scoreboard.Team;
 
 public class Dependency {
-    
+
     protected static WorldGuardPlugin worldguard = null;
     protected static Plugin towny = null;
     protected static Plugin vault = null;
@@ -41,7 +39,7 @@ public class Dependency {
             permission = rsp.getProvider();
         }
     }
-    
+
     public static boolean isProtectedFrom(Block block, Player player){
         if (worldguard != null) {
             if (!worldguard.createProtectionQuery().testBlockPlace(player, block.getLocation(), block.getType())) {
@@ -63,12 +61,12 @@ public class Dependency {
         }
         return false;
     }
-    
+
     public static boolean isTownyTownOrNationOf(String line, Player player){
         if (towny != null){
             String name = player.getName();
             try {
-                Resident resident = TownyAPI.getInstance().getDataSource().getResident(name); // fix this eventually
+                Resident resident = TownyAPI.getInstance().getResident(name); // fix this eventually
                 Town town = resident.getTown();
                 if (line.equals("[" + town.getName() + "]")) return true;
                 Nation nation = town.getNation();
@@ -77,7 +75,7 @@ public class Dependency {
         }
         return false;
     }
-    
+
     public static boolean isPermissionGroupOf(String line, Player player){
         if (vault != null){
             try {
@@ -89,7 +87,7 @@ public class Dependency {
         }
         return false;
     }
-    
+
     public static boolean isScoreboardTeamOf(String line, Player player){
         Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
         if (team != null){
