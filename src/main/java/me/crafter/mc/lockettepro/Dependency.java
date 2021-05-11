@@ -1,10 +1,10 @@
 package me.crafter.mc.lockettepro;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownyPermission.ActionType;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
 import com.palmergames.bukkit.towny.utils.PlayerCacheUtil;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
@@ -30,7 +30,7 @@ public class Dependency {
         if (worldguardplugin == null || !(worldguardplugin instanceof WorldGuardPlugin)) {
             worldguard = null;
         } else {
-            worldguard = (WorldGuardPlugin)worldguardplugin;
+            worldguard = (WorldGuardPlugin) worldguardplugin;
         }
         // Towny
         towny = plugin.getServer().getPluginManager().getPlugin("Towny");
@@ -50,11 +50,11 @@ public class Dependency {
         }
         if (towny != null){
             try {
-                if (TownyUniverse.getDataSource().getWorld(block.getWorld().getName()).isUsingTowny()){
+                if (TownyAPI.getInstance().getTownyWorld(block.getWorld().getName()).isUsingTowny()) {
                     // In town only residents can
                     if (!PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), ActionType.BUILD)) return true;
                     // Wilderness permissions
-                    if (TownyUniverse.isWilderness(block)){ // It is wilderness here
+                    if (TownyAPI.getInstance().isWilderness(block)) { // It is wilderness here
                         if (Config.isSuperLockable(block.getType())) return false;
                         if (!player.hasPermission("lockettepro.towny.wilds")) return true;
                     }
@@ -68,7 +68,7 @@ public class Dependency {
         if (towny != null){
             String name = player.getName();
             try {
-                Resident resident = TownyUniverse.getDataSource().getResident(name);
+                Resident resident = TownyAPI.getInstance().getDataSource().getResident(name); // fix this eventually
                 Town town = resident.getTown();
                 if (line.equals("[" + town.getName() + "]")) return true;
                 Nation nation = town.getNation();

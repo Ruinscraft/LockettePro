@@ -13,12 +13,6 @@ import org.bukkit.block.data.Waterlogged;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.entity.Player;
 
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
-import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
-import com.palmergames.bukkit.towny.object.WorldCoord;
 
 public class LocketteProAPI {
 
@@ -142,8 +136,9 @@ public class LocketteProAPI {
 	public static boolean isOwner(Block block, Player player){
 		if (isWithinTown(block)) {
 			try {
-				Town town = WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
-				Resident mayor = town.getMayor();
+				com.palmergames.bukkit.towny.object.Town town =
+						com.palmergames.bukkit.towny.object.WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+				com.palmergames.bukkit.towny.object.Resident mayor = town.getMayor();
 				if (mayor.getName().equals(player.getName())) return true;
 			} catch (Exception e) { }
 		}
@@ -244,8 +239,8 @@ public class LocketteProAPI {
 
 	public static boolean isProtected(Block block) {
 		try {
-			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
-		} catch (NotRegisteredException e) {
+			com.palmergames.bukkit.towny.object.WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+		} catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException e) {
 			return Config.isSuperLockable(block.getType());
 		}
 		return (isLockSign(block) || isLocked(block) || isUpDownLockedDoor(block));
@@ -480,8 +475,8 @@ public class LocketteProAPI {
 	public static boolean isWithinTown(Block block) {
 		if (Config.isSuperLockable(block.getType())) return true;
 		try {
-			WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
-		} catch (NotRegisteredException e) {
+			com.palmergames.bukkit.towny.object.WorldCoord.parseWorldCoord(block).getTownBlock().getTown();
+		} catch (com.palmergames.bukkit.towny.exceptions.NotRegisteredException e) {
 			return false;
 		}
 		return true;
