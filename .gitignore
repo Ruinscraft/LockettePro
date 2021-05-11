@@ -1,24 +1,43 @@
-# eclipse specific git ignore
-*.pydevproject
-.project
-.metadata
-bin/**
-tmp/**
-tmp/**/*
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
+# Eclipse stuff
 .classpath
+.project
 .settings/
-.loadpath
-.idea/
+
+# netbeans
+nbproject/
+nbactions.xml
+
+# we use maven!
+build.xml
+
+# maven
+target/
+dependency-reduced-pom.xml
+
+# gradle
+.gradle/
+
+# vim
+.*.sw[a-p]
+
+# various other potential build files
+build/
+bin/
+out/
+dist/
+manifest.mf
+
+# Mac filesystem dust
+.DS_Store/
+
+# intellij
 *.iml
-lib/
-/.gradle/
-/bin/
-/build/
-gradlew
-gradlew.bat
-gradle/
+*.ipr
+*.iws
+.idea/
+
+# other files
+*.log*
+
+# delombok
+*/src/main/lombok
